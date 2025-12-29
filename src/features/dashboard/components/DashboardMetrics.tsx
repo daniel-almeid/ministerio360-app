@@ -1,22 +1,58 @@
 import { View, Text, StyleSheet } from "react-native";
 
+type Props = {
+  income: number;
+  expenses: number;
+  visitors: number;
+  nextEvent: string;
+};
+
 export function DashboardMetrics({
   income,
   expenses,
   visitors,
   nextEvent,
-}: any) {
+}: Props) {
   return (
     <View style={styles.container}>
-      <Metric title="Entradas mês atual" value={income} color="#38B2AC" />
-      <Metric title="Saídas mês atual" value={expenses} color="#E53E3E" />
-      <Metric title="Novos visitantes" value={visitors} color="#81E6D9" />
-      <Metric title="Próximo evento" value={nextEvent} color="#3182CE" />
+      <Metric
+        title="Entradas mês atual"
+        value={formatCurrency(income)}
+        color="#0d8d87ff"
+      />
+      <Metric
+        title="Saídas mês atual"
+        value={formatCurrency(expenses)}
+        color="#E53E3E"
+      />
+      <Metric
+        title="Novos visitantes"
+        value={String(visitors)}
+        color="#2f9e8fff"
+      />
+      <Metric
+        title="Próximo evento"
+        value={nextEvent}
+        color="#3182CE"
+      />
     </View>
   );
 }
 
-function Metric({ title, value, color }: any) {
+function formatCurrency(value: number) {
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format(value);
+}
+
+type MetricProps = {
+  title: string;
+  value: string;
+  color: string;
+};
+
+function Metric({ title, value, color }: MetricProps) {
   return (
     <View style={styles.card}>
       <Text style={styles.title}>{title}</Text>

@@ -38,7 +38,7 @@ export function AppHeader() {
 
 const styles = StyleSheet.create({
   safe: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#0F766E",
   },
 
   container: {
