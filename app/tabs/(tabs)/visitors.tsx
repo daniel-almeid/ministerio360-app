@@ -1,9 +1,5 @@
-import { View, Text } from "react-native";
+import VisitorsScreen from "../../../src/features/visitors";
 
-export default function Finances() {
-  return (
-    <View>
-      <Text>Visitantens</Text>
-    </View>
-  );
+export default function VisitorsTab() {
+  return <VisitorsScreen />;
 }
