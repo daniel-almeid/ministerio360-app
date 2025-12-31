@@ -19,35 +19,35 @@ export function useEvents(
     const [showDelete, setShowDelete] = useState(false);
     const [deleting, setDeleting] = useState(false);
 
-    const [filterMinistry, setFilterMinistry] = useState("");
     const [grouped, setGrouped] = useState<Record<string, EventItem[]>>({});
     const [nextEvent, setNextEvent] = useState<EventItem | null>(null);
 
     useEffect(() => {
         load();
-    }, [filterMinistry]);
+    }, []);
 
     async function load() {
         setLoading(true);
 
-        let data = await fetchEvents();
-
-        if (filterMinistry) {
-            data = data.filter((ev: any) =>
-                ev.ministries?.some((m: any) => m.name === filterMinistry)
-            );
-        }
+        const data = await fetchEvents();
 
         const now = new Date();
         const upcoming = data.filter((ev) => parseISO(ev.date) >= now);
         setNextEvent(upcoming[0] ?? null);
 
+        // Agrupa TODOS os eventos por mês
         const groups: Record<string, EventItem[]> = {};
 
         data.forEach((ev) => {
-            const month = format(parseISO(ev.date), "MMMM yyyy", { locale: ptBR });
-            if (!groups[month]) groups[month] = [];
-            groups[month].push(ev);
+            const monthLabel = format(parseISO(ev.date), "MMMM yyyy", {
+                locale: ptBR,
+            });
+
+            if (!groups[monthLabel]) {
+                groups[monthLabel] = [];
+            }
+
+            groups[monthLabel].push(ev);
         });
 
         setEvents(data);
@@ -98,9 +98,6 @@ export function useEvents(
         loading,
         grouped,
         nextEvent,
-
-        filterMinistry,
-        setFilterMinistry,
 
         selected,
 

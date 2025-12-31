@@ -1,5 +1,4 @@
 import { View, Text, StyleSheet, Pressable } from "react-native";
-import { Feather } from "@expo/vector-icons";
 import { EventItem } from "../../types/agenda";
 import { parseISO, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -19,39 +18,50 @@ export default function EventTableMobile({
 }: Props) {
     return (
         <View>
-            {nextEvent && (
-                <View style={styles.highlight}>
-                    <Text style={styles.highlightTitle}>{nextEvent.title}</Text>
-
-                    <Text style={styles.highlightText}>
-                        {format(parseISO(nextEvent.date), "dd/MM/yyyy", { locale: ptBR })}{" "}
-                        {nextEvent.time?.slice(0, 5)}
-                    </Text>
-                </View>
-            )}
-
-            {Object.entries(grouped).map(([month, events]) => (
-                <View key={month}>
-                    <Text style={styles.month}>{month}</Text>
+            {Object.entries(grouped).map(([monthLabel, events]) => (
+                <View key={monthLabel} style={styles.monthBlock}>
+                    <Text style={styles.monthTitle}>{monthLabel}</Text>
 
                     {events.map((event) => (
-                        <View key={event.id} style={styles.card}>
-                            <Text style={styles.cardTitle}>{event.title}</Text>
+                        <View key={event.id} style={styles.eventCard}>
+                            {/* Header */}
+                            <View style={styles.eventHeader}>
+                                <Text style={styles.eventTitle}>{event.title}</Text>
 
-                            <Text style={styles.cardText}>
-                                {format(parseISO(event.date), "dd/MM/yyyy", { locale: ptBR })}{" "}
-                                {event.time?.slice(0, 5)}
+                                <View style={styles.actions}>
+                                    <Pressable onPress={() => openEdit(event)}>
+                                        <Text style={styles.actionEdit}>Editar</Text>
+                                    </Pressable>
+
+                                    <Pressable onPress={() => openDelete(event)}>
+                                        <Text style={styles.actionDelete}>Excluir</Text>
+                                    </Pressable>
+                                </View>
+                            </View>
+
+                            {/* Data / Hora */}
+                            <Text style={styles.eventMeta}>
+                                {format(parseISO(event.date), "dd/MM/yyyy", {
+                                    locale: ptBR,
+                                })}
+                                {event.time ? ` • ${event.time}` : ""}
                             </Text>
 
-                            <View style={styles.actions}>
-                                <Pressable onPress={() => openEdit(event)}>
-                                    <Feather name="edit" size={18} color="#319795" />
-                                </Pressable>
+                            {/* Local */}
+                            {event.location ? (
+                                <Text style={styles.eventLocation}>{event.location}</Text>
+                            ) : null}
 
-                                <Pressable onPress={() => openDelete(event)}>
-                                    <Feather name="trash-2" size={18} color="#E53E3E" />
-                                </Pressable>
-                            </View>
+                            {/* Ministérios */}
+                            {event.ministries && event.ministries.length > 0 && (
+                                <View style={styles.ministriesContainer}>
+                                    {event.ministries.map((m) => (
+                                        <View key={m.id} style={styles.ministryBadge}>
+                                            <Text style={styles.ministryText}>{m.name}</Text>
+                                        </View>
+                                    ))}
+                                </View>
+                            )}
                         </View>
                     ))}
                 </View>
@@ -61,44 +71,73 @@ export default function EventTableMobile({
 }
 
 const styles = StyleSheet.create({
-    highlight: {
-        padding: 16,
-        backgroundColor: "#E6FFFA",
-        borderLeftWidth: 4,
-        borderLeftColor: "#38B2AC",
-        borderRadius: 8,
-        marginBottom: 20,
+    monthBlock: {
+        marginBottom: 24,
     },
-    highlightTitle: {
+    monthTitle: {
         fontSize: 16,
         fontWeight: "600",
-    },
-    highlightText: {
-        marginTop: 4,
-        color: "#2D3748",
-    },
-    month: {
-        fontWeight: "600",
-        marginVertical: 12,
+        marginBottom: 10,
         textTransform: "capitalize",
     },
-    card: {
+    eventCard: {
         backgroundColor: "#fff",
-        borderRadius: 8,
-        padding: 14,
+        borderRadius: 10,
+        padding: 12,
         marginBottom: 10,
+        borderWidth: 1,
+        borderColor: "#E5E7EB",
     },
-    cardTitle: {
+    eventHeader: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+    },
+    eventTitle: {
+        fontSize: 14,
         fontWeight: "600",
-    },
-    cardText: {
-        marginTop: 4,
-        color: "#4A5568",
     },
     actions: {
         flexDirection: "row",
-        justifyContent: "flex-end",
-        gap: 16,
-        marginTop: 10,
+        gap: 12,
+    },
+    actionEdit: {
+        color: "#0D9488",
+        fontWeight: "500",
+    },
+    actionDelete: {
+        color: "#DC2626",
+        fontWeight: "500",
+    },
+    eventMeta: {
+        marginTop: 4,
+        fontSize: 12,
+        color: "#6B7280",
+    },
+    eventLocation: {
+        marginTop: 2,
+        fontSize: 12,
+        color: "#374151",
+    },
+
+    /* Ministérios */
+    ministriesContainer: {
+        flexDirection: "row",
+        flexWrap: "wrap",
+        gap: 8,
+        marginTop: 8,
+    },
+    ministryBadge: {
+        backgroundColor: "#EDFDFD",
+        borderColor: "#81E6D9",
+        borderWidth: 1,
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 999,
+    },
+    ministryText: {
+        fontSize: 11,
+        fontWeight: "500",
+        color: "#065F5B",
     },
 });

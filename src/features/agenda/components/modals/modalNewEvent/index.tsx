@@ -41,7 +41,11 @@ export default function ModalNewEvent({
                         toggle={toggle}
                     />
 
-                    <SubmitActions saving={saving} onClose={onClose} />
+                    <SubmitActions
+                        saving={saving}
+                        onClose={onClose}
+                        onSubmit={submit}
+                    />
                 </View>
             </View>
         </Modal>

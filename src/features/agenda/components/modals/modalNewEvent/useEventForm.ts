@@ -1,13 +1,21 @@
 import { useEffect, useState } from "react";
 import { Alert } from "react-native";
 import { supabase } from "../../../../../lib/supabase";
+import { parse, format } from "date-fns";
+
+type FormState = {
+    title: string;
+    date: string; // DD/MM/YYYY
+    time: string; // HH:mm
+    location: string;
+};
 
 export function useEventForm(
     eventData: any,
     onSuccess: () => void,
     onClose: () => void
 ) {
-    const [form, setForm] = useState({
+    const [form, setForm] = useState<FormState>({
         title: "",
         date: "",
         time: "",
@@ -20,7 +28,10 @@ export function useEventForm(
 
     useEffect(() => {
         loadMinistries();
-        if (eventData) loadData();
+
+        if (eventData) {
+            loadData();
+        }
     }, [eventData]);
 
     async function loadMinistries() {
@@ -34,8 +45,10 @@ export function useEventForm(
 
     async function loadData() {
         setForm({
-            title: eventData.title,
-            date: eventData.date?.slice(0, 10) || "",
+            title: eventData.title || "",
+            date: eventData.date
+                ? format(new Date(eventData.date), "dd/MM/yyyy")
+                : "",
             time: eventData.time || "",
             location: eventData.location || "",
         });
@@ -50,55 +63,80 @@ export function useEventForm(
 
     function toggle(id: string) {
         setSelected((prev) =>
-            prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+            prev.includes(id)
+                ? prev.filter((x) => x !== id)
+                : [...prev, id]
         );
     }
 
     async function submit() {
-        setSaving(true);
+        try {
+            setSaving(true);
 
-        const { data } = await supabase.auth.getSession();
-        const churchId = data.session?.user?.app_metadata?.church_id;
+            const { data } = await supabase.auth.getSession();
+            const churchId = data.session?.user?.app_metadata?.church_id;
 
-        const isoDate = form.date ? `${form.date}T12:00:00` : null;
+            if (!churchId) {
+                Alert.alert("Erro", "Igreja não identificada");
+                return;
+            }
 
-        const payload = {
-            title: form.title,
-            date: isoDate,
-            time: form.time,
-            location: form.location || null,
-            church_id: churchId,
-        };
+            const isoDate = form.date
+                ? parse(form.date, "dd/MM/yyyy", new Date()).toISOString()
+                : null;
 
-        let eventId = eventData?.id || null;
+            const payload = {
+                title: form.title,
+                date: isoDate,
+                time: form.time,
+                location: form.location || null,
+                church_id: churchId,
+            };
 
-        if (eventData) {
-            await supabase.from("events").update(payload).eq("id", eventId);
-        } else {
-            const { data: created } = await supabase
-                .from("events")
-                .insert([payload])
-                .select("id")
-                .single();
+            let eventId = eventData?.id ?? null;
 
-            eventId = created?.id;
+            if (eventData) {
+                await supabase
+                    .from("events")
+                    .update(payload)
+                    .eq("id", eventId);
+            } else {
+                const { data: created, error } = await supabase
+                    .from("events")
+                    .insert([payload])
+                    .select("id")
+                    .single();
+
+                if (error) {
+                    throw error;
+                }
+
+                eventId = created.id;
+            }
+
+            await supabase
+                .from("event_ministries")
+                .delete()
+                .eq("event_id", eventId);
+
+            if (selected.length > 0) {
+                const rows = selected.map((m) => ({
+                    event_id: eventId,
+                    ministry_id: m,
+                }));
+
+                await supabase.from("event_ministries").insert(rows);
+            }
+
+            Alert.alert("Sucesso", "Evento salvo com sucesso");
+            onSuccess();
+            onClose();
+        } catch (error) {
+            console.log(error);
+            Alert.alert("Erro", "Não foi possível salvar o evento");
+        } finally {
+            setSaving(false);
         }
-
-        await supabase.from("event_ministries").delete().eq("event_id", eventId);
-
-        if (selected.length > 0) {
-            const rows = selected.map((m) => ({
-                event_id: eventId,
-                ministry_id: m,
-            }));
-
-            await supabase.from("event_ministries").insert(rows);
-        }
-
-        Alert.alert("Sucesso", "Evento salvo com sucesso");
-        onSuccess();
-        onClose();
-        setSaving(false);
     }
 
     return {
