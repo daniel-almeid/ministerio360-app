@@ -12,7 +12,11 @@ const links = [
   { href: "/tabs/ministries", label: "Ministérios", icon: "business", plan: "premium" },
   { href: "/tabs/members", label: "Membros", icon: "people", plan: "free" },
   { href: "/tabs/visitors", label: "Visitantes", icon: "person-add", plan: "standard" },
-  { href: "/tabs/agenda", label: "Agenda e Escalas", icon: "calendar", plan: "premium" },
+
+  // 🔹 Separado
+  { href: "/tabs/agenda", label: "Agenda", icon: "calendar", plan: "premium" },
+  { href: "/tabs/scales", label: "Escalas", icon: "list", plan: "premium" },
+
   { href: "/tabs/reports", label: "Relatórios", icon: "bar-chart", plan: "standard" },
   { href: "/tabs/settings", label: "Configurações", icon: "settings", plan: "free" },
 ] as const;
@@ -39,7 +43,10 @@ export function DrawerContent({ navigation }: DrawerContentComponentProps) {
       <View style={styles.header}>
         <Text style={styles.logo}>Ministério360</Text>
 
-        <Pressable onPress={() => navigation.closeDrawer()} style={styles.closeButton}>
+        <Pressable
+          onPress={() => navigation.closeDrawer()}
+          style={styles.closeButton}
+        >
           <Ionicons name="close" size={22} color="#E6FFFA" />
         </Pressable>
       </View>
