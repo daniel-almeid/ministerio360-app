@@ -1,7 +1,6 @@
 import { View, StyleSheet } from "react-native";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
-import Loading from "../../shared/ui/loading";
 import VisitorTable from "./components/visitorTable";
 import VisitorModal from "./components/modals/visitorModal";
 import VisitorDetailsDrawer from "./components/drawer/visitorDetailsDrawer";
@@ -13,7 +12,8 @@ export default function VisitorsScreen() {
   const {
     visitors,
     loading,
-    setSearchDebounced,
+    search,                 // ✅ USAR O SEARCH DO HOOK
+    setSearchDebounced,     // ✅ FUNÇÃO CORRETA
     showArchived,
     setShowArchived,
     statusFilter,
@@ -35,59 +35,34 @@ export default function VisitorsScreen() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedVisitor, setSelectedVisitor] = useState<Visitor | null>(null);
 
-  function openNew() {
-    setEditingVisitor(null);
-    setModalOpen(true);
-  }
-
-  function openEdit(v: Visitor) {
-    setEditingVisitor(v);
-    setModalOpen(true);
-  }
-
-  function openDetails(v: Visitor) {
-    setSelectedVisitor(v);
-    setDrawerOpen(true);
-  }
-
-  function closeDetails() {
-    setDrawerOpen(false);
-    setSelectedVisitor(null);
-  }
-
-  async function onFollowup(v: Visitor) {
-    const updated = await handleFollowup(v);
-    if (updated) reload();
-  }
-
-  async function onFinish(v: Visitor) {
-    const updated = await handleFinish(v);
-    if (updated) reload();
-  }
-
-  const searchValueMirror = useMemo(() => "", []);
-
-  if (loading) return <Loading visible />;
-
   return (
     <View style={styles.page}>
       <VisitorTable
         visitors={visitors}
         isLoading={loading}
-        searchValue={searchValueMirror}
-        onSearchChange={setSearchDebounced}
+        searchValue={search}                 // ✅ AQUI
+        onSearchChange={setSearchDebounced}  // ✅ AQUI
         showArchived={showArchived}
-        onToggleArchived={() => {
-          setStatusFilter("all");
-          setShowArchived(!showArchived);
-        }}
+        onToggleArchived={setShowArchived}
         statusFilter={statusFilter}
         onStatusChange={(v) => setStatusFilter(v as any)}
         processingId={processingId}
-        onSelect={openDetails}
-        onFollowup={onFollowup}
-        onFinish={onFinish}
-        onNewClick={openNew}
+        onSelect={(v) => {
+          setSelectedVisitor(v);
+          setDrawerOpen(true);
+        }}
+        onFollowup={async (v) => {
+          const updated = await handleFollowup(v);
+          if (updated) reload();
+        }}
+        onFinish={async (v) => {
+          const updated = await handleFinish(v);
+          if (updated) reload();
+        }}
+        onNewClick={() => {
+          setEditingVisitor(null);
+          setModalOpen(true);
+        }}
         currentPage={currentPage}
         totalPages={totalPages}
         totalItems={totalItems}
@@ -107,13 +82,24 @@ export default function VisitorsScreen() {
         visible={drawerOpen}
         visitor={selectedVisitor}
         processingId={processingId}
-        onClose={closeDetails}
+        onClose={() => {
+          setDrawerOpen(false);
+          setSelectedVisitor(null);
+        }}
         onUpdated={reload}
-        onStartFollowup={onFollowup}
-        onFinishFollowup={onFinish}
+        onStartFollowup={async (v) => {
+          const updated = await handleFollowup(v);
+          if (updated) reload();
+        }}
+        onFinishFollowup={async (v) => {
+          const updated = await handleFinish(v);
+          if (updated) reload();
+        }}
         onEdit={(v) => {
-          closeDetails();
-          openEdit(v);
+          setDrawerOpen(false);
+          setSelectedVisitor(null);
+          setEditingVisitor(v);
+          setModalOpen(true);
         }}
       />
     </View>
@@ -122,7 +108,7 @@ export default function VisitorsScreen() {
 
 const styles = StyleSheet.create({
   page: {
-    flex: 1, 
+    flex: 1,
     backgroundColor: "#F9FAFB",
   },
 });

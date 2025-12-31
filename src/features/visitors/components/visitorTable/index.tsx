@@ -6,6 +6,7 @@ import {
     StyleSheet,
     FlatList,
 } from "react-native";
+import { useEffect, useState } from "react";
 import type { Visitor } from "../../types/visitors";
 import { StatusPills } from "./statusPills";
 import { VisitorCard } from "./visitorCard";
@@ -55,27 +56,45 @@ export default function VisitorTable({
     onNext,
     onPrev,
 }: Props) {
+    
+    const [localSearch, setLocalSearch] = useState(searchValue);
+
+    // mantém sincronizado caso o search seja limpo externamente
+    useEffect(() => {
+        setLocalSearch(searchValue);
+    }, [searchValue]);
+
     return (
         <View style={styles.container}>
-            {/* HEADER */}
             <View style={styles.topRow}>
                 <TextInput
                     placeholder="Pesquisar visitante..."
-                    value={searchValue}
-                    onChangeText={onSearchChange}
+                    value={localSearch}
+                    onChangeText={(text) => {
+                        setLocalSearch(text);
+                        onSearchChange(text);
+                    }}
                     style={styles.search}
                 />
 
                 <View style={styles.actions}>
-                    <Pressable onPress={onToggleArchived} style={styles.archiveBtn}>
+                    <Pressable
+                        onPress={onToggleArchived}
+                        style={styles.archiveBtn}
+                    >
                         <Text style={styles.archiveText}>
                             {showArchived ? "Ativos" : "Arquivados"}
                         </Text>
                     </Pressable>
 
                     {!showArchived && (
-                        <Pressable onPress={onNewClick} style={styles.newBtn}>
-                            <Text style={styles.newText}>Novo</Text>
+                        <Pressable
+                            onPress={onNewClick}
+                            style={styles.newBtn}
+                        >
+                            <Text style={styles.newText}>
+                                Novo Visitante
+                            </Text>
                         </Pressable>
                     )}
                 </View>
@@ -96,47 +115,48 @@ export default function VisitorTable({
                 </View>
             )}
 
-            {/* LISTA */}
-            {isLoading ? (
-                <View style={styles.loadingWrap}>
+            <View style={styles.listArea}>
+                {isLoading ? (
                     <Loading visible />
-                </View>
-            ) : (
-                <FlatList
-                    data={visitors}
-                    keyExtractor={(item) => item.id}
-                    contentContainerStyle={styles.listContent}
-                    renderItem={({ item }) => (
-                        <VisitorCard
-                            visitor={item}
-                            showArchived={showArchived}
-                            processingId={processingId}
-                            onSelect={onSelect}
-                            onFollowup={onFollowup}
-                            onFinish={onFinish}
-                        />
-                    )}
-                    ListEmptyComponent={
-                        <Text style={styles.empty}>
+                ) : visitors.length === 0 ? (
+                    <View style={styles.emptyWrap}>
+                        <Text style={styles.emptyText}>
                             {showArchived
                                 ? "Nenhum visitante arquivado."
                                 : "Nenhum visitante encontrado."}
                         </Text>
-                    }
-                />
-            )}
-
-            {/* PAGINAÇÃO FIXA */}
-            <View style={styles.paginationWrap}>
-                <PaginationControls
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    totalItems={totalItems}
-                    itemsPerPage={itemsPerPage}
-                    onPrev={onPrev}
-                    onNext={onNext}
-                />
+                    </View>
+                ) : (
+                    <FlatList
+                        data={visitors}
+                        keyExtractor={(item) => item.id}
+                        contentContainerStyle={styles.listContent}
+                        renderItem={({ item }) => (
+                            <VisitorCard
+                                visitor={item}
+                                showArchived={showArchived}
+                                processingId={processingId}
+                                onSelect={onSelect}
+                                onFollowup={onFollowup}
+                                onFinish={onFinish}
+                            />
+                        )}
+                    />
+                )}
             </View>
+
+            {totalItems > 0 && (
+                <View style={styles.paginationWrap}>
+                    <PaginationControls
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        totalItems={totalItems}
+                        itemsPerPage={itemsPerPage}
+                        onPrev={onPrev}
+                        onNext={onNext}
+                    />
+                </View>
+            )}
         </View>
     );
 }
@@ -150,25 +170,21 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: "#E5E7EB",
     },
-
     topRow: { gap: 10 },
-
     search: {
         borderWidth: 1,
         borderColor: "#E5E7EB",
-        borderRadius: 12,
+        borderRadius: 24,
         paddingHorizontal: 12,
         paddingVertical: 10,
         color: "#111827",
     },
-
     actions: {
         flexDirection: "row",
-        gap: 4,
-        paddingVertical: 4,
+        gap: 8,
         justifyContent: "flex-end",
+        padding: 8,
     },
-
     archiveBtn: {
         borderWidth: 1,
         borderColor: "#E5E7EB",
@@ -177,40 +193,22 @@ const styles = StyleSheet.create({
         paddingHorizontal: 12,
         borderRadius: 12,
     },
-
     archiveText: { color: "#374151", fontWeight: "700" },
-
     newBtn: {
         backgroundColor: "#38B2AC",
         paddingVertical: 10,
         paddingHorizontal: 14,
         borderRadius: 12,
     },
-
     newText: { color: "#fff", fontWeight: "800" },
-
-    pillsWrap: {
-        marginBottom: 10,
-        paddingBottom: 10,
-        paddingVertical: 10,
-    },
-
-    listContent: {
-        paddingBottom: 12,
-    },
-
-    loadingWrap: {
-        flex: 1,
-        paddingTop: 24,
-    },
-
-    empty: {
-        textAlign: "center",
-        paddingVertical: 24,
+    pillsWrap: { marginBottom: 10 },
+    listArea: { flex: 1, marginTop: 4 },
+    listContent: { paddingBottom: 12 },
+    paginationWrap: { paddingTop: 8 },
+    emptyWrap: { flex: 1, paddingTop: 40, alignItems: "center" },
+    emptyText: {
         color: "#6B7280",
-    },
-
-    paginationWrap: {
-        paddingTop: 8,
+        fontSize: 14,
+        textAlign: "center",
     },
 });

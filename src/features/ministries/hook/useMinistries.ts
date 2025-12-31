@@ -55,7 +55,7 @@ export function useMinistries() {
         setLoading(false);
     }, [currentPage, searchTerm]);
 
-    // 🔁 debounce + paginação
+    // debounce + paginação
     useEffect(() => {
         if (debounceRef.current) {
             clearTimeout(debounceRef.current);
@@ -72,7 +72,7 @@ export function useMinistries() {
         };
     }, [fetchMinistries]);
 
-    // 🔁 reset de página ao buscar
+    // reset de página ao buscar
     useEffect(() => {
         if (searchTerm.trim()) {
             setCurrentPage(1);
@@ -94,10 +94,6 @@ export function useMinistries() {
     async function refresh() {
         await fetchMinistries();
     }
-
-    // =========================
-    // CRUD — SEM UI
-    // =========================
 
     async function createMinistry(payload: {
         name: string;
