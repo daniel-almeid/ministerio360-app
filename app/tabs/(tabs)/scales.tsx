@@ -1,9 +1,5 @@
-import { View, Text } from "react-native";
+import ScaleSection from "../../../src/features/scales/scalesSection";
 
-export default function agendaScreen() {
-  return (
-    <View>
-      <Text>Escalas</Text>
-    </View>
-  );
+export default function Scales() {
+  return <ScaleSection />;
 }
