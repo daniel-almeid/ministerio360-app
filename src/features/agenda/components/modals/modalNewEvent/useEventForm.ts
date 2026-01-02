@@ -1,12 +1,16 @@
 import { useEffect, useState } from "react";
-import { Alert } from "react-native";
 import { supabase } from "../../../../../lib/supabase";
 import { parse, format } from "date-fns";
+import {
+    notifySuccess,
+    notifyError,
+    notifyWarning,
+} from "../../../../../shared/ui/toast";
 
 type FormState = {
     title: string;
-    date: string; // DD/MM/YYYY
-    time: string; // HH:mm
+    date: string;
+    time: string;
     location: string;
 };
 
@@ -28,10 +32,7 @@ export function useEventForm(
 
     useEffect(() => {
         loadMinistries();
-
-        if (eventData) {
-            loadData();
-        }
+        if (eventData) loadData();
     }, [eventData]);
 
     async function loadMinistries() {
@@ -63,9 +64,7 @@ export function useEventForm(
 
     function toggle(id: string) {
         setSelected((prev) =>
-            prev.includes(id)
-                ? prev.filter((x) => x !== id)
-                : [...prev, id]
+            prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
         );
     }
 
@@ -77,7 +76,7 @@ export function useEventForm(
             const churchId = data.session?.user?.app_metadata?.church_id;
 
             if (!churchId) {
-                Alert.alert("Erro", "Igreja não identificada");
+                notifyError("Igreja não identificada");
                 return;
             }
 
@@ -96,10 +95,7 @@ export function useEventForm(
             let eventId = eventData?.id ?? null;
 
             if (eventData) {
-                await supabase
-                    .from("events")
-                    .update(payload)
-                    .eq("id", eventId);
+                await supabase.from("events").update(payload).eq("id", eventId);
             } else {
                 const { data: created, error } = await supabase
                     .from("events")
@@ -107,10 +103,7 @@ export function useEventForm(
                     .select("id")
                     .single();
 
-                if (error) {
-                    throw error;
-                }
-
+                if (error) throw error;
                 eventId = created.id;
             }
 
@@ -128,12 +121,12 @@ export function useEventForm(
                 await supabase.from("event_ministries").insert(rows);
             }
 
-            Alert.alert("Sucesso", "Evento salvo com sucesso");
+            notifySuccess("Evento salvo com sucesso");
             onSuccess();
             onClose();
         } catch (error) {
             console.log(error);
-            Alert.alert("Erro", "Não foi possível salvar o evento");
+            notifyError("Não foi possível salvar o evento");
         } finally {
             setSaving(false);
         }

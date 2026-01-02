@@ -4,6 +4,7 @@ import EventTableMobile from "./table/eventTable";
 import ModalNewEvent from "./modals/modalNewEvent";
 import ModalEditEvent from "./modals/modalEditEvent";
 import ConfirmDeleteModal from "./modals/confirmDeleteModal";
+import Loading from "@/src/shared/ui/loading";
 import { Ministry } from "../types/agenda";
 
 type Props = {
@@ -16,6 +17,7 @@ export default function EventSection({
     onRefreshMinistries,
 }: Props) {
     const {
+        loading,
         grouped,
         nextEvent,
         load,
@@ -63,6 +65,8 @@ export default function EventSection({
                     </ScrollView>
                 </View>
             </View>
+
+            <Loading visible={loading} />
 
             {showNew && (
                 <ModalNewEvent
@@ -114,7 +118,6 @@ const styles = StyleSheet.create({
         shadowRadius: 8,
         elevation: 2,
     },
-
     header: {
         flexDirection: "row",
         justifyContent: "space-between",
@@ -139,12 +142,10 @@ const styles = StyleSheet.create({
         color: "#fff",
         fontWeight: "600",
     },
-
     scrollWrapper: {
         flex: 1,
         minHeight: 0,
     },
-
     listContent: {
         paddingBottom: 24,
     },

@@ -50,7 +50,7 @@ export default function EventFormFields({ form, setForm }: Props) {
 
     return (
         <View style={styles.container}>
-            {/* Título */}
+            {/* Title */}
             <View>
                 <Text style={styles.label}>Título</Text>
                 <TextInput
@@ -61,7 +61,7 @@ export default function EventFormFields({ form, setForm }: Props) {
                 />
             </View>
 
-            {/* Data */}
+            {/* Date */}
             <View>
                 <Text style={styles.label}>Data</Text>
                 <Pressable style={styles.input} onPress={() => setShowDate(true)}>
@@ -78,7 +78,7 @@ export default function EventFormFields({ form, setForm }: Props) {
                 )}
             </View>
 
-            {/* Hora */}
+            {/* Hour */}
             <View>
                 <Text style={styles.label}>Hora</Text>
                 <Pressable style={styles.input} onPress={() => setShowTime(true)}>
@@ -96,7 +96,7 @@ export default function EventFormFields({ form, setForm }: Props) {
                 )}
             </View>
 
-            {/* Local */}
+            {/* Locate */}
             <View>
                 <Text style={styles.label}>Local</Text>
                 <TextInput

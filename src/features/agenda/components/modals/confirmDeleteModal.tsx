@@ -27,12 +27,12 @@ export default function ConfirmDeleteModal({
                     <Text style={styles.message}>{message}</Text>
 
                     <View style={styles.actions}>
-                        <Pressable onPress={onClose}>
+                        <Pressable onPress={onClose} disabled={loading}>
                             <Text>Cancelar</Text>
                         </Pressable>
 
                         <Pressable
-                            style={styles.deleteButton}
+                            style={[styles.deleteButton, loading && styles.disabled]}
                             onPress={onConfirm}
                             disabled={loading}
                         >
@@ -81,5 +81,8 @@ const styles = StyleSheet.create({
     },
     deleteText: {
         color: "#fff",
+    },
+    disabled: {
+        opacity: 0.6,
     },
 });

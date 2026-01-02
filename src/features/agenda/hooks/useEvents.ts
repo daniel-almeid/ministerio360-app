@@ -1,9 +1,14 @@
 import { useEffect, useState } from "react";
-import { Alert } from "react-native";
 import { fetchEvents, deleteEvent } from "../services/eventsService";
 import { EventItem, Ministry } from "../types/agenda";
 import { parseISO, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import {
+    notifySuccess,
+    notifyError,
+    notifyLoading,
+    dismissToast,
+} from "@/src/shared/ui/toast";
 
 export function useEvents(
     ministries: Ministry[],
@@ -27,32 +32,33 @@ export function useEvents(
     }, []);
 
     async function load() {
-        setLoading(true);
+        try {
+            setLoading(true);
 
-        const data = await fetchEvents();
+            const data = await fetchEvents();
 
-        const now = new Date();
-        const upcoming = data.filter((ev) => parseISO(ev.date) >= now);
-        setNextEvent(upcoming[0] ?? null);
+            const now = new Date();
+            const upcoming = data.filter((ev) => parseISO(ev.date) >= now);
+            setNextEvent(upcoming[0] ?? null);
 
-        // Agrupa TODOS os eventos por mês
-        const groups: Record<string, EventItem[]> = {};
+            const groups: Record<string, EventItem[]> = {};
 
-        data.forEach((ev) => {
-            const monthLabel = format(parseISO(ev.date), "MMMM yyyy", {
-                locale: ptBR,
+            data.forEach((ev) => {
+                const monthLabel = format(parseISO(ev.date), "MMMM yyyy", {
+                    locale: ptBR,
+                });
+
+                if (!groups[monthLabel]) groups[monthLabel] = [];
+                groups[monthLabel].push(ev);
             });
 
-            if (!groups[monthLabel]) {
-                groups[monthLabel] = [];
-            }
-
-            groups[monthLabel].push(ev);
-        });
-
-        setEvents(data);
-        setGrouped(groups);
-        setLoading(false);
+            setEvents(data);
+            setGrouped(groups);
+        } catch (error) {
+            notifyError("Erro ao carregar eventos");
+        } finally {
+            setLoading(false);
+        }
     }
 
     function openNew() {
@@ -80,32 +86,37 @@ export function useEvents(
     async function confirmDelete() {
         if (!selected) return;
 
-        setDeleting(true);
-        const { error } = await deleteEvent(selected.id);
+        try {
+            setDeleting(true);
+            notifyLoading("Excluindo evento...");
 
-        if (!error) {
-            Alert.alert("Sucesso", "Evento excluído");
+            const { error } = await deleteEvent(selected.id);
+            dismissToast();
+
+            if (error) {
+                notifyError("Erro ao excluir evento");
+                return;
+            }
+
+            notifySuccess("Evento excluído com sucesso");
             await load();
-        } else {
-            Alert.alert("Erro", "Erro ao excluir evento");
+        } catch (error) {
+            notifyError("Erro inesperado ao excluir evento");
+        } finally {
+            setDeleting(false);
+            closeAll();
         }
-
-        setDeleting(false);
-        closeAll();
     }
 
     return {
         loading,
         grouped,
         nextEvent,
-
         selected,
-
         showNew,
         showEdit,
         showDelete,
         deleting,
-
         load,
         openNew,
         openEdit,
