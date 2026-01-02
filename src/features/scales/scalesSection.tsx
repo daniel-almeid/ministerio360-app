@@ -1,15 +1,23 @@
 import { View, Text, StyleSheet, Pressable } from "react-native";
-import { Feather } from "@expo/vector-icons";
 import { useScales } from "./hooks/useScales";
 import Loading from "../../shared/ui/loading";
 import ScaleTableMobile from "./components/table/scaleTable";
 import ConfirmDeleteModal from "./components/modal/confirmDeleteModal";
 import ScaleDetailsModal from "./components/modal/scaleDetails";
+import ModalNewScale from "./components/modal/modalNewScale";
+import { MinistryLite } from "./types/scales";
 
-export default function ScaleSection() {
+type Props = {
+    ministries: MinistryLite[];
+};
+
+export default function ScaleSection({ ministries }: Props) {
     const {
         grouped,
         loading,
+
+        showNew,
+        selected,
 
         openNew,
         openEdit,
@@ -24,12 +32,14 @@ export default function ScaleSection() {
         deleting,
         confirmDelete,
         closeAll,
+        load,
     } = useScales();
 
     return (
         <View style={styles.container}>
+            {/* Header */}
             <View style={styles.header}>
-                <View>
+                <View style={styles.headerText}>
                     <Text style={styles.title}>Escalas</Text>
                     <Text style={styles.subtitle}>
                         Organização por data e ministério
@@ -37,11 +47,11 @@ export default function ScaleSection() {
                 </View>
 
                 <Pressable style={styles.newBtn} onPress={openNew}>
-                    <Feather name="plus" size={16} color="#fff" />
                     <Text style={styles.newText}>Nova escala</Text>
                 </Pressable>
             </View>
 
+            {/* Card */}
             <View style={styles.card}>
                 {loading ? (
                     <Loading visible />
@@ -54,6 +64,15 @@ export default function ScaleSection() {
                     />
                 )}
             </View>
+
+            {/* Modais */}
+            <ModalNewScale
+                visible={showNew}
+                onClose={closeAll}
+                onSuccess={load}
+                ministries={ministries}
+                scaleData={selected}
+            />
 
             <ScaleDetailsModal
                 visible={showDetails}
@@ -77,28 +96,56 @@ const styles = StyleSheet.create({
         padding: 16,
         backgroundColor: "#F9FAFB",
     },
+
     header: {
         flexDirection: "row",
+        alignItems: "center",
         justifyContent: "space-between",
-        marginBottom: 12,
+        marginBottom: 16,
     },
-    title: { fontSize: 20, fontWeight: "700" },
-    subtitle: { fontSize: 13, color: "#6B7280" },
+
+    headerText: {
+        gap: 2,
+    },
+
+    title: {
+        fontSize: 22,
+        fontWeight: "700",
+        color: "#111827",
+    },
+
+    subtitle: {
+        fontSize: 13,
+        color: "#6B7280",
+    },
+
     newBtn: {
-        flexDirection: "row",
-        gap: 8,
         backgroundColor: "#38B2AC",
-        paddingHorizontal: 14,
-        paddingVertical: 10,
+        paddingHorizontal: 18,
+        paddingVertical: 11,
         borderRadius: 12,
+        shadowColor: "#000",
+        shadowOpacity: 0.08,
+        shadowRadius: 4,
+        elevation: 2,
     },
-    newText: { color: "#fff", fontWeight: "700" },
+
+    newText: {
+        color: "#FFFFFF",
+        fontWeight: "700",
+        fontSize: 13,
+    },
+
     card: {
         flex: 1,
-        backgroundColor: "#fff",
-        borderRadius: 16,
+        backgroundColor: "#FFFFFF",
+        borderRadius: 18,
         padding: 12,
         borderWidth: 1,
         borderColor: "#E5E7EB",
+        shadowColor: "#000",
+        shadowOpacity: 0.04,
+        shadowRadius: 6,
+        elevation: 1,
     },
 });

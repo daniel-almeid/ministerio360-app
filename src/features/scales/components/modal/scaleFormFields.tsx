@@ -1,32 +1,89 @@
-import { View, TextInput, StyleSheet } from "react-native";
+import {
+    View,
+    TextInput,
+    StyleSheet,
+    Pressable,
+    Platform,
+} from "react-native";
+import { useState } from "react";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import {
+    toISODate,
+    fromISODate,
+    formatDateBR,
+} from "@/src/shared/utils/date";
 
 type Props = {
-    form: any;
-    setForm: (v: any) => void;
+    form: {
+        date: string;
+        event: string;
+        responsible: string;
+    };
+    setForm: React.Dispatch<React.SetStateAction<any>>;
 };
 
 export default function ScaleFormFields({ form, setForm }: Props) {
+    const [showPicker, setShowPicker] = useState(false);
+
+    function handleChange(_: any, selected?: Date) {
+        setShowPicker(false);
+        if (!selected) return;
+
+        setForm((prev: any) => ({
+            ...prev,
+            date: toISODate(selected),
+        }));
+    }
+
     return (
         <View style={styles.grid}>
-            <TextInput
-                style={styles.input}
-                placeholder="Data (YYYY-MM-DD)"
-                value={form.date}
-                onChangeText={(v) => setForm({ date: v })}
-            />
+            <Pressable onPress={() => setShowPicker(true)}>
+                <TextInput
+                    style={styles.input}
+                    placeholder="Data"
+                    value={form.date ? formatDateBR(form.date) : ""}
+                    editable={false}
+                    pointerEvents="none"
+                />
+            </Pressable>
+
+            {showPicker && (
+                <DateTimePicker
+                    value={
+                        form.date
+                            ? fromISODate(form.date)
+                            : new Date()
+                    }
+                    mode="date"
+                    display={
+                        Platform.OS === "ios" ? "spinner" : "default"
+                    }
+                    onChange={handleChange}
+                />
+            )}
 
             <TextInput
                 style={styles.input}
                 placeholder="Responsável"
                 value={form.responsible}
-                onChangeText={(v) => setForm({ responsible: v })}
+                onChangeText={(v) =>
+                    setForm((prev: any) => ({
+                        ...prev,
+                        responsible: v,
+                    }))
+                }
             />
 
             <TextInput
                 style={styles.input}
                 placeholder="Evento"
                 value={form.event}
-                onChangeText={(v) => setForm({ event: v })}
+                onChangeText={(v) =>
+                    setForm((prev: any) => ({
+                        ...prev,
+                        event: v,
+                    }))
+                }
             />
         </View>
     );
@@ -42,5 +99,6 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         padding: 12,
         fontSize: 14,
+        backgroundColor: "#FFFFFF",
     },
 });

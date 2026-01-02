@@ -1,81 +1,81 @@
 import { supabase } from "@/src/lib/supabase";
 import { ScaleItem } from "../types/scales";
 
-export async function fetchScales(churchId: string): Promise<ScaleItem[]> {
+// LISTAR ESCALAS
+export async function fetchScales(
+    churchId: string
+): Promise<ScaleItem[]> {
     const { data, error } = await supabase
         .from("scales")
         .select("id, date, event_name, responsible, ministries")
         .eq("church_id", churchId)
-        .order("date");
+        .order("date", { ascending: true });
 
-    if (error) return [];
+    if (error || !data) {
+        return [];
+    }
 
-    return (
-        data?.map((row: any) => ({
-            id: row.id,
-            date: row.date,
-            event: row.event_name,
-            responsible: row.responsible,
-            ministries: row.ministries || [],
-        })) ?? []
-    );
+    return data.map((row: any) => ({
+        id: row.id,
+        date: row.date,
+        event: row.event_name,
+        responsible: row.responsible,
+        ministries: row.ministries || [],
+    }));
 }
 
-export async function fetchScaleDetails(scaleId: string) {
-    const { data: scale, error: scaleError } = await supabase
+// DETALHES DA ESCALA
+export async function fetchScaleDetails(scaleId: string, churchId: string) {
+    const { data: scale } = await supabase
         .from("scales")
         .select("id, date, event_name, responsible")
         .eq("id", scaleId)
         .single();
 
-    if (scaleError || !scale) return null;
+    if (!scale) return null;
 
-    const { data: assignments } = await supabase
+    const { data: assigns } = await supabase
         .from("scale_assignments")
         .select("ministry_id, member_id")
-        .eq("scale_id", scaleId);
+        .eq("scale_id", scaleId)
+        .eq("church_id", churchId);
 
-    if (!assignments || assignments.length === 0) {
-        return {
-            scale,
-            grouped: {},
-        };
+    if (!assigns?.length) {
+        return { scale, grouped: {} };
     }
 
-    const ministryIds = [...new Set(assignments.map((a) => a.ministry_id))];
-    const memberIds = [...new Set(assignments.map((a) => a.member_id))];
+    const ministryIds = [...new Set(assigns.map(a => a.ministry_id))];
+    const memberIds = [...new Set(assigns.map(a => a.member_id))];
 
-    const { data: ministries } = await supabase
+    const { data: mins } = await supabase
         .from("ministries")
         .select("id, name")
-        .in("id", ministryIds);
+        .in("id", ministryIds)
+        .eq("church_id", churchId);
 
-    const { data: members } = await supabase
+    const { data: mems } = await supabase
         .from("members")
         .select("id, name")
-        .in("id", memberIds);
+        .in("id", memberIds)
+        .eq("church_id", churchId);
 
-    const ministryMap = new Map(ministries?.map((m) => [m.id, m.name]));
-    const memberMap = new Map(members?.map((m) => [m.id, m.name]));
+    const mapMin = new Map(mins?.map(m => [m.id, m.name]));
+    const mapMem = new Map(mems?.map(m => [m.id, m.name]));
 
     const grouped: Record<string, string[]> = {};
 
-    assignments.forEach((row) => {
-        const ministryName = ministryMap.get(row.ministry_id);
-        const memberName = memberMap.get(row.member_id);
-
-        if (!ministryName || !memberName) return;
-
-        if (!grouped[ministryName]) grouped[ministryName] = [];
-        grouped[ministryName].push(memberName);
+    assigns.forEach(row => {
+        const mName = mapMin.get(row.ministry_id);
+        const uName = mapMem.get(row.member_id);
+        if (!mName || !uName) return;
+        if (!grouped[mName]) grouped[mName] = [];
+        grouped[mName].push(uName);
     });
 
-    return {
-        scale,
-        grouped,
-    };
+    return { scale, grouped };
 }
 
+// EXCLUIR ESCALA
 export async function deleteScale(id: string) {
     return supabase.from("scales").delete().eq("id", id);
 }

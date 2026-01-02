@@ -2,7 +2,11 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/src/lib/supabase";
 import { fetchScales, deleteScale } from "../services/scalesService";
 import { ScaleItem } from "../types/scales";
-import { notifyError, notifyLoading, notifySuccess } from "../../../shared/ui/toast";
+import {
+    notifyError,
+    notifyLoading,
+    notifySuccess,
+} from "../../../shared/ui/toast";
 
 function groupByDate(scales: ScaleItem[]) {
     const map: Record<string, ScaleItem[]> = {};
@@ -23,31 +27,47 @@ export function useScales() {
     const [scales, setScales] = useState<ScaleItem[]>([]);
     const [loading, setLoading] = useState(true);
 
+    // edição / exclusão
     const [selected, setSelected] = useState<ScaleItem | null>(null);
 
+    // modais
     const [showNew, setShowNew] = useState(false);
-    const [showEdit, setShowEdit] = useState(false);
     const [showDelete, setShowDelete] = useState(false);
 
-    // DETALHES
-    const [showDetails, setShowDetails] = useState(false);
+    // drawer detalhes
     const [detailsScaleId, setDetailsScaleId] = useState<string | null>(null);
+    const showDetails = !!detailsScaleId;
 
     const [deleting, setDeleting] = useState(false);
 
     const load = useCallback(async () => {
         setLoading(true);
 
+        // sessão
         const { data: session } = await supabase.auth.getSession();
-        const churchId = session.session?.user?.app_metadata?.church_id;
+        const userId = session.session?.user?.id;
 
-        if (!churchId) {
+        if (!userId) {
             setScales([]);
             setLoading(false);
             return;
         }
 
-        const data = await fetchScales(churchId);
+        // church_id via profile (NUNCA app_metadata no mobile)
+        const { data: profile, error: profileError } = await supabase
+            .from("profiles")
+            .select("church_id")
+            .eq("id", userId)
+            .single();
+
+        if (profileError || !profile?.church_id) {
+            setScales([]);
+            setLoading(false);
+            return;
+        }
+
+        // carregar escalas
+        const data = await fetchScales(profile.church_id);
         setScales(data);
         setLoading(false);
     }, []);
@@ -58,6 +78,8 @@ export function useScales() {
 
     const grouped = useMemo(() => groupByDate(scales), [scales]);
 
+    // Ações
+
     function openNew() {
         setSelected(null);
         setShowNew(true);
@@ -65,7 +87,7 @@ export function useScales() {
 
     function openEdit(item: ScaleItem) {
         setSelected(item);
-        setShowEdit(true);
+        setShowNew(true);
     }
 
     function openDelete(item: ScaleItem) {
@@ -73,22 +95,19 @@ export function useScales() {
         setShowDelete(true);
     }
 
-    // abrir detalhes
     function openDetails(item: ScaleItem) {
         setDetailsScaleId(item.id);
-        setShowDetails(true);
     }
 
     function closeDetails() {
-        setShowDetails(false);
         setDetailsScaleId(null);
     }
 
     function closeAll() {
         setShowNew(false);
-        setShowEdit(false);
         setShowDelete(false);
         setSelected(null);
+        closeDetails();
     }
 
     async function confirmDelete() {
@@ -112,28 +131,30 @@ export function useScales() {
     }
 
     return {
+        // dados
         grouped,
         loading,
 
-        selected,
-
-        showNew,
-        showEdit,
-        showDelete,
-
-        // details
+        // drawer
         showDetails,
         detailsScaleId,
-        openDetails,
-        closeDetails,
 
+        // modais
+        showNew,
+        showDelete,
         deleting,
+        selected,
 
+        // ações
         openNew,
         openEdit,
         openDelete,
-        confirmDelete,
+        openDetails,
+
+        closeDetails,
         closeAll,
+
+        confirmDelete,
         load,
     };
 }

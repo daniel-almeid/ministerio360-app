@@ -1,6 +1,15 @@
-import { Modal, View, Text, StyleSheet, ScrollView, Pressable } from "react-native";
-import { useEffect, useState } from "react";
+import {
+    Modal,
+    View,
+    Text,
+    StyleSheet,
+    ScrollView,
+    Pressable,
+    Animated,
+} from "react-native";
+import { useEffect, useRef, useState } from "react";
 import { Feather } from "@expo/vector-icons";
+import { supabase } from "@/src/lib/supabase";
 import { fetchScaleDetails } from "../../services/scalesService";
 import Loading from "../../../../shared/ui/loading";
 
@@ -10,44 +19,107 @@ type Props = {
     onClose: () => void;
 };
 
-export default function ScaleDetailsModal({ visible, scaleId, onClose }: Props) {
-    const [loading, setLoading] = useState(true);
-    const [data, setData] = useState<any>(null);
+type DetailsData = {
+    scale: {
+        id: string;
+        date: string;
+        event_name: string;
+        responsible: string;
+    };
+    grouped: Record<string, string[]>;
+};
 
+export default function ScaleDetailsDrawer({
+    visible,
+    scaleId,
+    onClose,
+}: Props) {
+    const [loading, setLoading] = useState(false);
+    const [data, setData] = useState<DetailsData | null>(null);
+
+    const translateX = useRef(new Animated.Value(360)).current;
+
+    // animação do drawer
     useEffect(() => {
-        if (!scaleId) return;
-        load();
-    }, [scaleId]);
+        Animated.timing(translateX, {
+            toValue: visible ? 0 : 360,
+            duration: visible ? 250 : 200,
+            useNativeDriver: true,
+        }).start();
+    }, [visible]);
 
-    async function load() {
+    // carregar dados
+    useEffect(() => {
+        if (!visible || !scaleId) return;
+        load(scaleId);
+    }, [visible, scaleId]);
+
+    async function load(id: string) {
         setLoading(true);
-        const res = await fetchScaleDetails(scaleId!);
+        setData(null);
+
+        // 🔑 church_id igual ao resto do app
+        const { data: session } = await supabase.auth.getSession();
+        const userId = session.session?.user?.id;
+
+        if (!userId) {
+            setLoading(false);
+            return;
+        }
+
+        const { data: profile } = await supabase
+            .from("profiles")
+            .select("church_id")
+            .eq("id", userId)
+            .single();
+
+        if (!profile?.church_id) {
+            setLoading(false);
+            return;
+        }
+
+        const res = await fetchScaleDetails(id, profile.church_id);
         setData(res);
         setLoading(false);
     }
 
-    if (!visible) return null;
-
     return (
-        <Modal visible transparent animationType="fade">
+        <Modal visible={visible} transparent animationType="none">
             <View style={styles.backdrop}>
                 <Pressable style={styles.overlay} onPress={onClose} />
 
-                <View style={styles.drawer}>
+                <Animated.View
+                    style={[
+                        styles.drawer,
+                        { transform: [{ translateX }] },
+                    ]}
+                >
                     <View style={styles.header}>
                         <Text style={styles.title}>Detalhes da Escala</Text>
-                        <Pressable onPress={onClose}>
-                            <Feather name="x" size={18} />
+                        <Pressable onPress={onClose} style={styles.closeBtn}>
+                            <Feather name="x" size={18} color="#6B7280" />
                         </Pressable>
                     </View>
 
-                    {loading ? (
+                    {loading || !data ? (
                         <Loading visible />
                     ) : (
-                        <ScrollView contentContainerStyle={styles.content}>
-                            <Item label="Data" value={formatDate(data.scale.date)} />
-                            <Item label="Evento" value={data.scale.event_name} />
-                            <Item label="Responsável" value={data.scale.responsible} />
+                        <ScrollView
+                            contentContainerStyle={styles.content}
+                            showsVerticalScrollIndicator={false}
+                        >
+                            <Item
+                                label="Data"
+                                value={formatDate(data.scale.date)}
+                            />
+                            <Item
+                                label="Evento"
+                                value={data.scale.event_name}
+                            />
+                            <Item
+                                label="Responsável"
+                                value={data.scale.responsible}
+                            />
 
                             <View style={styles.section}>
                                 <Text style={styles.sectionTitle}>
@@ -56,25 +128,27 @@ export default function ScaleDetailsModal({ visible, scaleId, onClose }: Props) 
 
                                 {!Object.keys(data.grouped).length ? (
                                     <Text style={styles.empty}>
-                                        Nenhum membro atribuído
+                                        Nenhum ministério ou membro listado.
                                     </Text>
                                 ) : (
                                     Object.entries(data.grouped).map(
-                                        ([ministry, members]: any) => (
+                                        ([ministry, members]) => (
                                             <View
                                                 key={ministry}
                                                 style={styles.block}
                                             >
-                                                <Text style={styles.ministry}>
+                                                <Text
+                                                    style={styles.ministry}
+                                                >
                                                     {ministry}
                                                 </Text>
 
-                                                {members.map((m: string) => (
+                                                {members.map((m, i) => (
                                                     <Text
-                                                        key={m}
+                                                        key={i}
                                                         style={styles.member}
                                                     >
-                                                        • {m}
+                                                        {m}
                                                     </Text>
                                                 ))}
                                             </View>
@@ -84,7 +158,7 @@ export default function ScaleDetailsModal({ visible, scaleId, onClose }: Props) 
                             </View>
                         </ScrollView>
                     )}
-                </View>
+                </Animated.View>
             </View>
         </Modal>
     );
@@ -114,23 +188,31 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     drawer: {
-        width: 320,
+        width: 360,
         backgroundColor: "#fff",
         padding: 16,
+        shadowColor: "#000",
+        shadowOpacity: 0.1,
+        shadowRadius: 10,
+        elevation: 10,
     },
     header: {
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
-        marginBottom: 12,
+        marginBottom: 16,
+    },
+    closeBtn: {
+        padding: 6,
+        borderRadius: 6,
     },
     title: {
         fontWeight: "700",
         fontSize: 16,
-        color: "#111827",
+        color: "#374151",
     },
     content: {
-        paddingBottom: 24,
+        paddingBottom: 32,
         gap: 16,
     },
     item: {
@@ -170,8 +252,9 @@ const styles = StyleSheet.create({
     },
     ministry: {
         fontWeight: "700",
-        color: "#0d8d87ff",
+        color: "#319795",
         fontSize: 13,
+        marginBottom: 4,
     },
     member: {
         fontSize: 13,
