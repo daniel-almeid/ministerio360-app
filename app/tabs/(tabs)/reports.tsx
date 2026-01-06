@@ -1,9 +1,5 @@
-import { View, Text } from "react-native";
+import ReportsSection from "@/src/features/reports/section/reportsSection";
 
 export default function Finances() {
-  return (
-    <View>
-      <Text>Relatórios</Text>
-    </View>
-  );
+  return <ReportsSection />;
 }
