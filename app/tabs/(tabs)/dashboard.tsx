@@ -1,6 +1,7 @@
 import { ScrollView, StyleSheet, View } from "react-native";
 import { useDashboardData } from "../../../src/features/dashboard/useDashboardData";
 import { DashboardMetrics } from "../../../src/features/dashboard/components/DashboardMetrics";
+import { DashboardFinanceChart } from "../../../src/features/dashboard/components/DashboardFinanceChart";
 import { DashboardEvents } from "../../../src/features/dashboard/components/DashboardEvents";
 import { DashboardVisitors } from "../../../src/features/dashboard/components/DashboardVisitors";
 import Loading from "../../../src/shared/ui/loading";
@@ -11,6 +12,7 @@ export default function Dashboard() {
     currentMonthExpenses,
     visitors,
     events,
+    monthlyTransactions,
     loading,
   } = useDashboardData();
 
@@ -23,6 +25,8 @@ export default function Dashboard() {
           visitors={visitors.length}
           nextEvent={events[0]?.title ?? "Nenhum"}
         />
+
+        <DashboardFinanceChart data={monthlyTransactions} />
 
         <DashboardEvents events={events} />
         <DashboardVisitors visitors={visitors} />
