@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import { useRouter, usePathname } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useDrawerData } from "./useDrawerData";
+import { UpgradeRequiredModal } from "../../features/plans/components/upgradeRequiredModal";
 import type { DrawerContentComponentProps } from "@react-navigation/drawer";
 
 const ADMIN_ID = "289d49c4-8db0-49e2-b527-af90809f3be8";
@@ -28,6 +30,8 @@ export function DrawerContent({ navigation }: DrawerContentComponentProps) {
   const pathname = usePathname();
   const { plan, userId } = useDrawerData();
 
+  const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
+
   function canAccess(required: string) {
     const level = { free: 1, standard: 2, premium: 3 };
     return level[plan] >= level[required as keyof typeof level];
@@ -36,6 +40,15 @@ export function DrawerContent({ navigation }: DrawerContentComponentProps) {
   function go(href: DrawerLink) {
     navigation.closeDrawer();
     router.replace(href as any);
+  }
+
+  function handleProtectedPress(href: DrawerLink, required: string) {
+    if (canAccess(required)) {
+      go(href);
+      return;
+    }
+
+    setUpgradeModalOpen(true);
   }
 
   return (
@@ -59,7 +72,7 @@ export function DrawerContent({ navigation }: DrawerContentComponentProps) {
           return (
             <Pressable
               key={href}
-              onPress={() => allowed && go(href)}
+              onPress={() => handleProtectedPress(href, required)}
               style={[
                 styles.link,
                 active && styles.active,
@@ -95,6 +108,11 @@ export function DrawerContent({ navigation }: DrawerContentComponentProps) {
           © {new Date().getFullYear()} Ministério360
         </Text>
       </View>
+
+      <UpgradeRequiredModal
+        visible={upgradeModalOpen}
+        onClose={() => setUpgradeModalOpen(false)}
+      />
     </View>
   );
 }
