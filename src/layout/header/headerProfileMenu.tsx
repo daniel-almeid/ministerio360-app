@@ -91,7 +91,7 @@ export function HeaderProfileMenu({ churchName, userEmail }: Props) {
                             label="Planos"
                             onPress={() => {
                                 setOpen(false);
-                                router.push("/tabs/plans");
+                                router.push("/tabs/plans")
                             }}
                         />
 

@@ -12,13 +12,11 @@ export default function TabsRootLayout() {
     useEffect(() => {
         checkSession();
 
-        const { data: sub } = supabase.auth.onAuthStateChange(
-            (_event, session) => {
-                if (!session) {
-                    router.replace("/auth/login");
-                }
+        const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+            if (!session) {
+                router.replace("/auth/login");
             }
-        );
+        });
 
         return () => {
             sub.subscription.unsubscribe();
@@ -48,7 +46,7 @@ export default function TabsRootLayout() {
 
     return (
         <Drawer
-            drawerContent={(props) => <DrawerContent {...props} />}
+            drawerContent={(props) => <DrawerContent {...(props as any)} />}
             screenOptions={{
                 header: () => <AppHeader />,
                 drawerStyle: {

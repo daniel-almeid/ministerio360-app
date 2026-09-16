@@ -58,27 +58,16 @@ export default function ScaleDetailsDrawer({
         setLoading(true);
         setData(null);
 
-        // 🔑 church_id igual ao resto do app
+        // 🔑 church_id igual ao resto do app (via app_metadata da sessão)
         const { data: session } = await supabase.auth.getSession();
-        const userId = session.session?.user?.id;
+        const churchId = session.session?.user?.app_metadata?.church_id as string | undefined;
 
-        if (!userId) {
+        if (!churchId) {
             setLoading(false);
             return;
         }
 
-        const { data: profile } = await supabase
-            .from("profiles")
-            .select("church_id")
-            .eq("id", userId)
-            .single();
-
-        if (!profile?.church_id) {
-            setLoading(false);
-            return;
-        }
-
-        const res = await fetchScaleDetails(id, profile.church_id);
+        const res = await fetchScaleDetails(id, churchId);
         setData(res);
         setLoading(false);
     }

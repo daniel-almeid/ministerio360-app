@@ -2,23 +2,14 @@ import { supabase } from "../../../lib/supabase";
 import type { FinancialReportItem } from "../types/types";
 
 async function getChurchId() {
-    const { data: auth } = await supabase.auth.getUser();
+    const { data } = await supabase.auth.getSession();
+    const churchId = data.session?.user?.app_metadata?.church_id as string | undefined;
 
-    if (!auth.user) {
-        throw new Error("Usuário não autenticado");
-    }
-
-    const { data, error } = await supabase
-        .from("profiles")
-        .select("church_id")
-        .eq("id", auth.user.id)
-        .single();
-
-    if (error || !data?.church_id) {
+    if (!churchId) {
         throw new Error("church_id não encontrado");
     }
 
-    return data.church_id as string;
+    return churchId;
 }
 
 export async function fetchFinancialReport(month: string) {

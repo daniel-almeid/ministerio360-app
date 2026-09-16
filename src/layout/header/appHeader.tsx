@@ -1,7 +1,6 @@
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useNavigation } from "@react-navigation/native";
-import { DrawerActions } from "@react-navigation/native";
+import { useNavigation } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useHeaderData } from "./userHeaderData";
 import { HeaderProfileMenu } from "./headerProfileMenu";
@@ -11,7 +10,7 @@ export function AppHeader() {
   const navigation = useNavigation();
 
   function openDrawer() {
-    navigation.dispatch(DrawerActions.openDrawer());
+    (navigation as any).openDrawer();
   }
 
   return (

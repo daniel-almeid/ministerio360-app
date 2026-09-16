@@ -138,21 +138,9 @@ export function useScaleForm(
         notifyLoading("Salvando escala...");
 
         const { data: session } = await supabase.auth.getSession();
-        const userId = session.session?.user?.id;
+        const churchId = session.session?.user?.app_metadata?.church_id as string | undefined;
 
-        if (!userId) {
-            notifyError("Usuário não autenticado");
-            setSaving(false);
-            return;
-        }
-
-        const { data: profile } = await supabase
-            .from("profiles")
-            .select("church_id")
-            .eq("id", userId)
-            .single();
-
-        if (!profile?.church_id) {
+        if (!churchId) {
             notifyError("Igreja não encontrada");
             setSaving(false);
             return;
@@ -201,7 +189,7 @@ export function useScaleForm(
                     event_name: form.event,
                     responsible: form.responsible,
                     ministries: selectedMinistries,
-                    church_id: profile.church_id,
+                    church_id: churchId,
                 })
                 .select("id")
                 .single();
@@ -221,7 +209,7 @@ export function useScaleForm(
                     scale_id: scaleId,
                     ministry_id: ministryId,
                     member_id: memberId,
-                    church_id: profile.church_id,
+                    church_id: churchId,
                 }))
         );
 

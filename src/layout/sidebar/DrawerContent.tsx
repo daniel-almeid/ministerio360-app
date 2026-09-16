@@ -13,11 +13,11 @@ const links = [
   { href: "/tabs/members", label: "Membros", icon: "people", plan: "free" },
   { href: "/tabs/visitors", label: "Visitantes", icon: "person-add", plan: "standard" },
 
-  // 🔹 Separado
   { href: "/tabs/agenda", label: "Agenda", icon: "calendar", plan: "premium" },
   { href: "/tabs/scales", label: "Escalas", icon: "list", plan: "premium" },
 
   { href: "/tabs/reports", label: "Relatórios", icon: "bar-chart", plan: "standard" },
+  { href: "/tabs/plans", label: "Planos", icon: "pricetag", plan: "free" },
   { href: "/tabs/settings", label: "Configurações", icon: "settings", plan: "free" },
 ] as const;
 

@@ -5,11 +5,7 @@ import Toast from "react-native-toast-message";
 export default function RootLayout() {
   return (
     <>
-      <StatusBar
-        style="light"
-        backgroundColor="#0F0F0F"
-        translucent={false}
-      />
+      <StatusBar style="light" />
 
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="index" />
@@ -17,10 +13,7 @@ export default function RootLayout() {
         <Stack.Screen name="tabs" />
       </Stack>
 
-      <Toast
-        position="bottom"
-        bottomOffset={70}
-      />
+      <Toast position="bottom" bottomOffset={70} />
     </>
   );
 }

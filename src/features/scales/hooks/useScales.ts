@@ -45,29 +45,16 @@ export function useScales() {
 
         // sessão
         const { data: session } = await supabase.auth.getSession();
-        const userId = session.session?.user?.id;
+        const churchId = session.session?.user?.app_metadata?.church_id as string | undefined;
 
-        if (!userId) {
-            setScales([]);
-            setLoading(false);
-            return;
-        }
-
-        // church_id via profile (NUNCA app_metadata no mobile)
-        const { data: profile, error: profileError } = await supabase
-            .from("profiles")
-            .select("church_id")
-            .eq("id", userId)
-            .single();
-
-        if (profileError || !profile?.church_id) {
+        if (!churchId) {
             setScales([]);
             setLoading(false);
             return;
         }
 
         // carregar escalas
-        const data = await fetchScales(profile.church_id);
+        const data = await fetchScales(churchId);
         setScales(data);
         setLoading(false);
     }, []);
@@ -153,7 +140,6 @@ export function useScales() {
 
         closeDetails,
         closeAll,
-
         confirmDelete,
         load,
     };

@@ -19,7 +19,7 @@ export function useMinistries() {
 
     const itemsPerPage = 10;
 
-    // React Native → setTimeout retorna number
+    // setTimeout return number
     const debounceRef = useRef<number | null>(null);
 
     const totalPages = useMemo(() => {
@@ -55,7 +55,7 @@ export function useMinistries() {
         setLoading(false);
     }, [currentPage, searchTerm]);
 
-    // debounce + paginação
+    // debounce and pagination
     useEffect(() => {
         if (debounceRef.current) {
             clearTimeout(debounceRef.current);
@@ -72,7 +72,7 @@ export function useMinistries() {
         };
     }, [fetchMinistries]);
 
-    // reset de página ao buscar
+    // reset to the search page
     useEffect(() => {
         if (searchTerm.trim()) {
             setCurrentPage(1);
