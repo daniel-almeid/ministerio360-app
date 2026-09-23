@@ -1,17 +1,21 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as SecureStore from "expo-secure-store";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    KeyboardAvoidingView,
-    Platform,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
+import { Feather } from "@expo/vector-icons";
 import { supabase } from "../../src/lib/supabase";
+
+const CREDENTIALS_KEY = "remembered_credentials";
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -22,13 +26,19 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Carregar e-mail salvo
+  // Carrega credenciais salvas (criptografadas) ao abrir a tela
   useEffect(() => {
     (async () => {
-      const savedEmail = await AsyncStorage.getItem("rememberedEmail");
-      if (savedEmail) {
-        setEmail(savedEmail);
-        setRemember(true);
+      try {
+        const saved = await SecureStore.getItemAsync(CREDENTIALS_KEY);
+        if (saved) {
+          const { email: savedEmail, password: savedPassword } = JSON.parse(saved);
+          setEmail(savedEmail ?? "");
+          setPassword(savedPassword ?? "");
+          setRemember(true);
+        }
+      } catch {
+        // Se der erro ao ler (ex: dado corrompido), apenas ignora e segue vazio
       }
     })();
   }, []);
@@ -54,15 +64,17 @@ export default function LoginScreen() {
         return;
       }
 
-      // Atualiza claims (igual ao web)
       await supabase.rpc("refresh_church_claim", {
         p_user_id: data.user.id,
       });
 
       if (remember) {
-        await AsyncStorage.setItem("rememberedEmail", email);
+        await SecureStore.setItemAsync(
+          CREDENTIALS_KEY,
+          JSON.stringify({ email, password })
+        );
       } else {
-        await AsyncStorage.removeItem("rememberedEmail");
+        await SecureStore.deleteItemAsync(CREDENTIALS_KEY);
       }
 
       router.replace("/tabs/dashboard");
@@ -108,18 +120,16 @@ export default function LoginScreen() {
           />
         </View>
 
-        <TouchableOpacity
+        <Pressable
           onPress={() => setRemember(!remember)}
           style={styles.rememberRow}
+          hitSlop={8}
         >
-          <View
-            style={[
-              styles.checkbox,
-              remember && styles.checkboxChecked,
-            ]}
-          />
+          <View style={[styles.checkbox, remember && styles.checkboxChecked]}>
+            {remember && <Feather name="check" size={14} color="#fff" />}
+          </View>
           <Text style={styles.rememberText}>Lembrar meus dados</Text>
-        </TouchableOpacity>
+        </Pressable>
 
         {error ? (
           <Text style={styles.errorText}>{error}</Text>
@@ -135,6 +145,25 @@ export default function LoginScreen() {
           ) : (
             <Text style={styles.primaryButtonText}>Entrar</Text>
           )}
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={() => router.push("/auth/reset-password")}
+          style={styles.forgotButton}
+          hitSlop={10}
+        >
+          <Text style={styles.forgotText}>Esqueci minha senha</Text>
+        </TouchableOpacity>
+
+        <View style={styles.divider} />
+
+        <TouchableOpacity
+          onPress={() => router.push("/auth/register")}
+          style={styles.createAccountButton}
+          hitSlop={6}
+        >
+          <Feather name="user-plus" size={16} color="#0F766E" />
+          <Text style={styles.createAccountText}>Não tem conta? Criar agora</Text>
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
@@ -187,13 +216,18 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
+    alignSelf: "flex-start",
+    paddingVertical: 4,
   },
   checkbox: {
-    width: 18,
-    height: 18,
-    borderWidth: 1,
+    width: 22,
+    height: 22,
+    borderWidth: 1.5,
     borderColor: "#9CA3AF",
-    borderRadius: 4,
+    borderRadius: 6,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#fff",
   },
   checkboxChecked: {
     backgroundColor: "#38B2AC",
@@ -201,6 +235,8 @@ const styles = StyleSheet.create({
   },
   rememberText: {
     color: "#374151",
+    fontSize: 14,
+    fontWeight: "500",
   },
   errorText: {
     color: "#EF4444",
@@ -217,5 +253,35 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "600",
+  },
+  forgotButton: {
+    alignSelf: "center",
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+  },
+  forgotText: {
+    color: "#6B7280",
+    fontWeight: "600",
+    fontSize: 13,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: "#E5E7EB",
+  },
+  createAccountButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: "#38B2AC",
+    backgroundColor: "#F0FDFA",
+  },
+  createAccountText: {
+    color: "#0F766E",
+    fontWeight: "700",
+    fontSize: 14,
   },
 });
