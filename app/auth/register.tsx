@@ -13,9 +13,8 @@ import {
     View,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import * as WebBrowser from "expo-web-browser";
 import { supabase } from "../../src/lib/supabase";
-import { CardForm, CardFormValues } from "../../src/features/plans/components/cardForm";
-import { tokenizeCard } from "../../src/features/plans/services/cardTokenService";
 
 type PlanSlug = "free" | "standard" | "premium";
 
@@ -57,42 +56,10 @@ function validatePassword(pwd: string) {
     };
 }
 
-const API_BASE_URL =
-    process.env.EXPO_PUBLIC_API_BASE_URL || "https://ministerio360.vercel.app";
-
-async function createSubscriptionForNewAccount(params: {
-    planSlug: PlanSlug;
-    cardToken: string;
-    email: string;
-    name: string;
-    document: string;
-    phone: { area_code: string; number: string };
-    address: { line_1: string; zip_code: string; city: string; state: string };
-}) {
-    const res = await fetch(`${API_BASE_URL}/api/pagarme/create-subscription`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            plan_slug: params.planSlug,
-            card_token: params.cardToken,
-            email: params.email,
-            name: params.name,
-            document: params.document,
-            phone: params.phone,
-            address: params.address,
-        }),
-    });
-
-    const json = await res.json();
-
-    if (!res.ok || !json?.success) {
-        throw new Error(json?.error || "Erro ao criar assinatura.");
-    }
-
-    return json;
-}
-
-// ===== Modal de benefícios do plano =====
+// A troca/assinatura de plano acontece sempre no site, nunca dentro do
+// app Android — isso evita a exigência do Google Play Billing para
+// compras processadas de fato dentro do aplicativo.
+const WEB_LOGIN_URL = "https://ministerio360.vercel.app/login";
 
 function PlanDetailsModal({
     slug,
@@ -143,9 +110,6 @@ export default function RegisterScreen() {
     const [detailsPlan, setDetailsPlan] = useState<PlanSlug | null>(null);
 
     const [accountCreated, setAccountCreated] = useState(false);
-    const [showCardForm, setShowCardForm] = useState(false);
-    const [paying, setPaying] = useState(false);
-    const [paidSuccessfully, setPaidSuccessfully] = useState(false);
 
     const pwdCheck = validatePassword(password);
 
@@ -190,51 +154,9 @@ export default function RegisterScreen() {
         setAccountCreated(true);
     }
 
-    async function confirmarAssinatura(values: CardFormValues) {
-        setPaying(true);
-        setError("");
-
-        try {
-            const cardToken = await tokenizeCard({
-                number: values.number,
-                holderName: values.holderName,
-                expMonth: values.expMonth,
-                expYear: values.expYear,
-                cvv: values.cvv,
-            });
-
-            const streetLine = `${values.street}, ${values.numberAddress}${
-                values.complement ? " - " + values.complement : ""
-            }`;
-
-            await createSubscriptionForNewAccount({
-                planSlug: plan,
-                cardToken,
-                email: email.trim(),
-                name: name.trim(),
-                document: values.document,
-                phone: { area_code: values.areaCode, number: values.phoneNumber },
-                address: {
-                    line_1: streetLine,
-                    zip_code: values.zipCode,
-                    city: values.city,
-                    state: values.state,
-                },
-            });
-
-            setShowCardForm(false);
-            setPaidSuccessfully(true);
-        } catch (err: any) {
-            setError(err.message || "Erro ao processar pagamento.");
-        } finally {
-            setPaying(false);
-        }
-    }
-
     const selectedPlan = PLANS.find((p) => p.slug === plan)!;
     const isPaidPlan = plan !== "free";
 
-    // ===== Tela de sucesso pós-cadastro =====
     if (accountCreated) {
         return (
             <View style={styles.container}>
@@ -245,23 +167,20 @@ export default function RegisterScreen() {
                         Acesse seu e-mail e confirme sua conta antes de fazer login.
                     </Text>
 
-                    {paidSuccessfully ? (
-                        <Text style={[styles.successText, { color: "#059669", fontWeight: "700" }]}>
-                            Assinatura confirmada! Assim que confirmar o e-mail e entrar, o plano{" "}
-                            {selectedPlan.name} já estará ativo.
-                        </Text>
-                    ) : isPaidPlan ? (
+                    {isPaidPlan && (
                         <Text style={styles.successText}>
-                            Depois de confirmar, finalize o pagamento abaixo para liberar o plano{" "}
-                            {selectedPlan.name}.
+                            Depois de confirmar, acesse pelo site para finalizar o pagamento do
+                            plano {selectedPlan.name}.
                         </Text>
-                    ) : null}
+                    )}
 
-                    {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
-                    {isPaidPlan && !paidSuccessfully && (
-                        <Pressable onPress={() => setShowCardForm(true)} style={styles.primaryButton}>
-                            <Text style={styles.primaryButtonText}>Pagar plano</Text>
+                    {isPaidPlan && (
+                        <Pressable
+                            onPress={() => WebBrowser.openBrowserAsync(WEB_LOGIN_URL)}
+                            style={styles.primaryButton}
+                        >
+                            <Feather name="external-link" size={16} color="#fff" />
+                            <Text style={styles.primaryButtonText}>Pagar plano no site</Text>
                         </Pressable>
                     )}
 
@@ -273,20 +192,10 @@ export default function RegisterScreen() {
                         <Text style={styles.secondaryButtonText}>Ir para o login</Text>
                     </Pressable>
                 </View>
-
-                <CardForm
-                    visible={showCardForm}
-                    planName={selectedPlan.name}
-                    price={selectedPlan.price}
-                    loading={paying}
-                    onClose={() => setShowCardForm(false)}
-                    onSubmit={confirmarAssinatura}
-                />
             </View>
         );
     }
 
-    // ===== Formulário de cadastro =====
     return (
         <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : undefined}
